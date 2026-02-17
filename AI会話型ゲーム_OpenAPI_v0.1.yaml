@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: AI会話型ゲーム API
+  version: 0.1.0
+paths:
+  /api/session/start:
+    post:
+      summary: セッション開始
+      responses:
+        '200':
+          description: OK
+  /api/chat:
+    post:
+      summary: チャット進行
+      requestBody:
+        required: true
+      responses:
+        '200':
+          description: OK
+  /api/portrait/extract:
+    post:
+      summary: 会話からportrait_tokens抽出
+      responses:
+        '200':
+          description: OK
+  /api/image/generate:
+    post:
+      summary: 最終画像生成
+      responses:
+        '200':
+          description: OK
+  /api/telemetry:
+    post:
+      summary: 演出ログ保存
+      responses:
+        '200':
+          description: OK

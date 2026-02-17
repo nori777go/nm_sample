@@ -1,0 +1,8 @@
+1. SQL を Supabase SQL Editor に適用
+2. .env.local に SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 設定
+3. npm install
+4. npm run dev
+5. URLアクセスでセッション開始
+6. 会話してBell遷移・touch演出を確認
+7. Bell5で画像生成、Sweet/Bitter両分岐を確認
+8. DBで turns/state_snapshots/events の記録を確認
