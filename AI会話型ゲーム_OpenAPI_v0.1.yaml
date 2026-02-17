@@ -1,0 +1,169 @@
+openapi: 3.0.3
+info:
+  title: AI会話型ゲーム API
+  version: "0.1"
+servers:
+  - url: https://example.com
+paths:
+  /api/session/start:
+    post:
+      summary: Start anonymous session
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client:
+                  type: object
+                  properties:
+                    user_agent: { type: string }
+                    platform: { type: string, enum: [pc, ios, android, unknown] }
+                    locale: { type: string }
+      responses:
+        "200":
+          description: Session started
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [session_id]
+                properties:
+                  session_id: { type: string, format: uuid }
+  /api/chat:
+    post:
+      summary: Send user text and receive NPC response + directives
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_text, client]
+              properties:
+                user_text: { type: string }
+                client:
+                  type: object
+                  required: [user_agent, platform, locale]
+                  properties:
+                    user_agent: { type: string }
+                    platform: { type: string, enum: [pc, ios, android, unknown] }
+                    locale: { type: string }
+      responses:
+        "200":
+          description: Chat response
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [session_id, turn_index, npc_text, directives, touch_event, bell, state]
+                properties:
+                  session_id: { type: string, format: uuid }
+                  turn_index: { type: integer }
+                  npc_text: { type: string }
+                  npc_subtext: { type: string }
+                  directives:
+                    type: object
+                    required: [add_user_visible_log, bg_sfx, ui_shake, flash]
+                    properties:
+                      add_user_visible_log: { type: string }
+                      bg_sfx: { type: string, enum: [none, drip, wind, machine] }
+                      ui_shake: { type: string, enum: [none, panel_weak, panel_strong, screen_strong] }
+                      flash: { type: string, enum: [none, weak, strong] }
+                  touch_event:
+                    type: object
+                    required: [trigger, reason, strength]
+                    properties:
+                      trigger: { type: boolean }
+                      reason: { type: string }
+                      strength: { type: number, minimum: 0, maximum: 1 }
+                  bell:
+                    type: object
+                    required: [id, advance, advance_reason]
+                    properties:
+                      id: { type: integer, minimum: 0, maximum: 5 }
+                      advance: { type: boolean }
+                      advance_reason: { type: string }
+                  state:
+                    type: object
+                    required: [setting_guess, identity_guess, trust, tension, mystery, distance, ending_route]
+                    properties:
+                      setting_guess: { type: string, enum: [unknown, pit, cave, facility] }
+                      identity_guess: { type: string, enum: [unknown, rescuer, pursuer, past_connection] }
+                      trust: { type: integer, minimum: -100, maximum: 100 }
+                      tension: { type: integer, minimum: 0, maximum: 100 }
+                      mystery: { type: integer, minimum: 0, maximum: 100 }
+                      distance: { type: string, enum: [far, near, touch] }
+                      ending_route: { type: string, nullable: true, enum: [sweet, bitter] }
+        "400":
+          description: Invalid request
+  /api/portrait/extract:
+    post:
+      summary: Extract portrait tokens from chat history
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id]
+              properties:
+                session_id: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Extracted tokens
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [portrait_tokens]
+                properties:
+                  portrait_tokens:
+                    type: array
+                    items: { type: string }
+  /api/image/generate:
+    post:
+      summary: Generate final portrait image based on session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id, style, ending_route]
+              properties:
+                session_id: { type: string, format: uuid }
+                style: { type: string, enum: [otome_anime] }
+                ending_route: { type: string, enum: [sweet, bitter] }
+      responses:
+        "200":
+          description: Generated image
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [image_url, prompt_used, tokens_used]
+                properties:
+                  image_url: { type: string }
+                  prompt_used: { type: string }
+                  tokens_used:
+                    type: array
+                    items: { type: string }
+  /api/telemetry:
+    post:
+      summary: (Optional) Log client-side effect execution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id, type, payload]
+              properties:
+                session_id: { type: string, format: uuid }
+                type: { type: string }
+                payload: { type: object }
+      responses:
+        "204":
+          description: Logged

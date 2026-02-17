@@ -1,0 +1,53 @@
+目的：
+URL配布できるブラウザ版のAI会話ゲーム（乙女ゲーム寄りアニメ調）。自由入力で進行し、Bell(章)で状態遷移。touch演出（UI揺れ/SE/演出ログ）と最終の相手画像生成（会話反映）が必須。ログはDBに保存。エンディングはSweet/Bitterの2種。
+
+前提：
+- Next.js（App Router）でフロント＋API同居
+- AIキーはサーバでのみ使用（クライアント禁止）
+- iOSはVibration API非対応想定。UI揺れ＋SE＋演出ログで成立させ、vibrateは navigator.vibrate?.() の安全呼び出しのみ上乗せ。
+
+実装タスク：
+1) DB準備（Supabase推奨）
+   - AI会話型ゲーム_DBスキーマ_v0.1.sql を適用
+2) Next.js プロジェクト雛形作成
+   - app/page.tsx：チャット画面
+   - components：ChatLog / ChatInput / EffectsLayer
+   - styles/globals.css：shake/flash/レイアウト
+3) API Route Handlers 実装
+   - POST /api/session/start：UUID発行→sessions作成
+   - POST /api/chat：
+       a. sessionロード（なければstart相当）
+       b. user turn保存
+       c. LLM呼び出し（JSON出力固定）→ Zodで検証
+       d. 検証失敗時は最大2回リトライ
+       e. state_updateのdelta適用＋clamp
+       f. touch_event クールダウン（3ターン）制御
+       g. bell遷移判定、Bell4でending_route確定（sweet/bitter）
+       h. npc turn保存（raw_llm_jsonも必要最小で保存）
+       i. state_snapshot保存
+       j. events（touch/bell/endingなど）保存
+       k. フロント用固定レスポンス返却
+   - POST /api/portrait/extract：
+       a. turnsから会話を取得
+       b. LLMでportrait_tokens抽出
+       c. state_snapshot（最新）に反映 or eventsに保存
+   - POST /api/image/generate：
+       a. 最新のportrait_tokensとending_route取得
+       b. 固定構図＋otome_animeスタイルでprompt組み立て
+       c. 画像生成→ストレージ保存→URL取得
+       d. sessions.final_image_url 更新＋events保存
+       e. image_url返却
+   - POST /api/telemetry（任意）：フロント演出実行ログをeventsに保存
+4) フロント演出
+   - /api/chat の directives/touch_event を受け取り
+     - ui_shake/flash/SE/演出ログ
+     - vibrateは navigator.vibrate?.(...) で安全に呼ぶ
+5) 受け入れテスト
+   - URLアクセスでセッション開始→会話→Bell遷移→touch演出複数回→Bell5で画像生成→Sweet/Bitter再現
+   - DBに turns/snapshots/events が残ること
+
+成果物：
+- 仕様書：AI会話型ゲーム_仕様書_Next.js_v0.1.md
+- OpenAPI：AI会話型ゲーム_OpenAPI_v0.1.yaml
+- DBスキーマ：AI会話型ゲーム_DBスキーマ_v0.1.sql
+- このタスク指示：Codex_実装タスク指示_v0.1.txt
